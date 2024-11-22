@@ -1,0 +1,43 @@
+# "org" ensures this Service is used with the correct Serverless Framework Access Key.
+org: jennetblom
+# "app" enables Serverless Framework Dashboard features and sharing them with other Services.
+app: notesapi
+# "service" is the name of this project. This will also be added to your AWS resource names.
+service: NotesApi
+
+provider:
+  name: aws
+  runtime: nodejs20.x
+  profile: test-jennet
+  region: eu-north-1
+  iam: 
+    role: ${env:AWS_LAMBDA_ROLE_ARN}
+
+
+plugins: 
+  - serverless-dotenv-plugin
+  - serverless-webpack
+
+package: 
+  individually: true
+
+build: 
+  esbuild: false
+
+functions:
+  hello:
+    handler: handler.hello
+
+resources:
+  Resources:
+    notesTable:
+      Type: AWS::DynamoDB::Table
+      Properties: 
+        TableName:  notes-db
+        AttributeDefinitions:
+          - AttributeName: id
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+        BillingMode: PAY_PER_REQUEST
+
