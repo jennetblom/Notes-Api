@@ -1,10 +1,24 @@
 const { sendResponse } = require("../../responses");
-import middy from '@middy/core';
+const middy = require('@middy/core');
 const { validateToken } = require("../middleware/auth");
 const AWS = require('aws-sdk');
 const db = new AWS.DynamoDB.DocumentClient();
-import { v4 as uuidv4 } from 'uuid';
+const { v4: uuidv4 } = require('uuid');
 
+
+function checkTextLimit(title, text) {
+
+    if(title.length > 50) {
+        return false;
+    } 
+    else if(text.length>300) {
+        return false;
+    } else {
+        return true;
+    }
+
+
+}
 const postNote = async (event) => {
     
   
@@ -15,6 +29,11 @@ const postNote = async (event) => {
         return sendResponse(401, { success: false, message: 'Invalid token' });
     }
     const{ title, text } = JSON.parse(event.body);
+
+    const checkTextSize = checkTextLimit(title, text);
+    if(!checkTextSize) {
+        return sendResponse(400, { success: false, message: 'Title or text are too long. Title should be max 50 characters and the text should be max 300 characters' });
+    }
     const username = event.username;
     const timestamp = new Date().toISOString();
     const id = uuidv4();
