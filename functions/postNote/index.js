@@ -3,7 +3,7 @@ const middy = require('@middy/core');
 const { validateToken } = require("../middleware/auth");
 const AWS = require('aws-sdk');
 const db = new AWS.DynamoDB.DocumentClient();
-const { v4: uuidv4 } = require('uuid');
+const { nanoid } = require('nanoid');
 
 
 function checkTextLimit(title, text) {
@@ -21,13 +21,7 @@ function checkTextLimit(title, text) {
 }
 const postNote = async (event) => {
     
-  
-    //an note should contain:
-    //id, title, text, createdAt and modifiedAt
 
-    if (event?.error && event?.error === '401') {
-        return sendResponse(401, { success: false, message: 'Invalid token' });
-    }
     const{ title, text } = JSON.parse(event.body);
 
     const checkTextSize = checkTextLimit(title, text);
@@ -36,7 +30,7 @@ const postNote = async (event) => {
     }
     const username = event.username;
     const timestamp = new Date().toISOString();
-    const id = uuidv4();
+    const id = nanoid(8);
    
     const params = {
         TableName: 'notes-db',
@@ -46,7 +40,8 @@ const postNote = async (event) => {
             title: title,
             text: text,
             createdAt: timestamp,
-            modifiedAt: timestamp
+            modifiedAt: timestamp,
+            isDeleted: false
         }
     };
 

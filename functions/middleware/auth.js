@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const { sendResponse } = require('../../responses');
 
 
 
@@ -8,7 +9,7 @@ const validateToken = {
 
             const token = request.event.headers.authorization.replace('Bearer ', '');
 
-            if (!token) throw new Error();
+            if (!token) throw new Error("Token is missing");
 
             const data = jwt.verify(token, 'aabbcc');
 
@@ -18,9 +19,11 @@ const validateToken = {
             return request.response
 
         } catch(error) {
-            request.event.error  = '401';
-
-            return request.response
+            throw new Error(
+                JSON.stringify(
+                    sendResponse(401, {success: false, message: error.message || 'Invalid token'})
+                )
+            )
         }
 
     }

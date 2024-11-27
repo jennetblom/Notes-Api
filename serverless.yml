@@ -32,28 +32,62 @@ functions:
       - httpApi:
           path: '/api/user/signup'
           method: POST
+
   login:
     handler: functions/login/index.handler
     events: 
       - httpApi:
           path: '/api/user/login'
           method: POST
-  getNotes:
-    handler: functions/getNotes/index.handler
+
+  getAllNotes:
+    handler: functions/getAllNotes/index.handler
     events: 
       - httpApi:
           path: '/api/notes'
           method: GET
+
+  getNoteById:
+    handler: functions/getNoteById/index.handler
+    events: 
+      - httpApi:
+          path: '/api/notes/{id}'
+          method: GET        
+
   postNote:
     handler: functions/postNote/index.handler
     events: 
       - httpApi:
           path: '/api/notes'
-          method: POST                         
+          method: POST
 
+  updateNote:
+    handler: functions/updateNote/index.handler
+    events: 
+      - httpApi:
+          path: '/api/notes/{id}'
+          method: PUT
 
+  deleteNote:
+    handler: functions/deleteNote/index.handler
+    events: 
+      - httpApi:
+          path: '/api/notes/{id}'
+          method: DELETE
 
-  
+  getDeletedNotes:
+    handler: functions/getDeletedNotes/index.handler
+    events: 
+      - httpApi:
+          path: '/api/notes/deleted'
+          method: GET        
+
+  restoreNote:
+    handler: functions/restoreNote/index.handler
+    events: 
+      - httpApi:
+          path: '/api/notes/{id}/restore'
+          method: PUT                                                 
 
 resources:
   Resources:
