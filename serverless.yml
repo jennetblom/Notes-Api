@@ -86,7 +86,7 @@ functions:
     handler: functions/restoreNote/index.handler
     events: 
       - httpApi:
-          path: '/api/notes/{id}/restore'
+          path: '/api/notes/restore/{id}'
           method: PUT                                                 
 
 resources:

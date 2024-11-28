@@ -50,6 +50,11 @@ async function checkIfUsernameExists(username) {
 async function signup(username, password, firstname, lastname) {
     // check if username already exists
     // if username exists => return { success: false, message: 'username already exists}
+
+    if (!username || !password || !firstname || !lastname) {
+        return { success: false, message: 'All fields are required' };
+    }
+    
     const usernameExists = await checkIfUsernameExists(username);
     if (usernameExists) {
         return { success: false, message: 'Username already exists' };

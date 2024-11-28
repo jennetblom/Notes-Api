@@ -10,23 +10,38 @@ const getNoteById = async (event) => {
     const username = event.username;
     const id =  event.pathParameters.id;
 
+    if (!id) {
+        return sendResponse(400, { success: false, message: 'ID is required' });
+    }
+    if (!username) {
+        return sendResponse(401, { success: false, message: 'Unauthorized: Missing username' });
+    }
     const params = {
         TableName: 'notes-db',
-        KeyConditionExpression: 'username = :username and id = :id',
-        ExpressionAttributeValues: {
-            ':username' : username,
-            ':id' : id
-        },
+        Key: {
+            username: username,
+            id: id
+        }
     };
 
     try {
-        const result = await db.query(params).promise();
+        const result = await db.get(params).promise();
 
-        if(result.Items.length > 0) {
-            return sendResponse(200,{ success: true, note: result.Items[0]});
-        } else {
-            return sendResponse(200, {success: true, message: "Couldnt find note"});
+        if(!result.Item) {
+            return sendResponse(404, { success: false, message: "Could not find note" });
+        } 
+
+        const note = {
+            username: result.Item.username,
+            id: result.Item.id,
+            title: result.Item.title,
+            text: result.Item.text,
+            createdAt: result.Item.createdAt,
+            modifiedAt: result.Item.modifiedAt,
+            isDeleted: result.Item.isDeleted
         }
+
+        return sendResponse(200,{ success: true, note: note});
     } catch (error) {
         console.log(error);
         return sendResponse(500, { success: false, message: 'Error fetching note' })

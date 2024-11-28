@@ -8,16 +8,18 @@ const { nanoid } = require('nanoid');
 
 function checkTextLimit(title, text) {
 
-    if(title.length > 50) {
-        return false;
-    } 
-    else if(text.length>300) {
-        return false;
-    } else {
-        return true;
+    if (title.length > 50 && text.length > 300){
+        return { success: false, message: 'Title and text are too long. Title should be max 50 characters and the text should be max 300 characters' };
     }
-
-
+    else if(title.length > 50) {
+        return { success: false, message: 'Title is too long. Title should be max 50 characters.' };
+    } 
+    else if(text.length > 300) {
+        return { success: false, message: 'Text is too long. Text should be max 300 characters.' };
+    } 
+    else {
+        return { success: true };
+    }
 }
 const postNote = async (event) => {
     
@@ -25,8 +27,8 @@ const postNote = async (event) => {
     const{ title, text } = JSON.parse(event.body);
 
     const checkTextSize = checkTextLimit(title, text);
-    if(!checkTextSize) {
-        return sendResponse(400, { success: false, message: 'Title or text are too long. Title should be max 50 characters and the text should be max 300 characters' });
+    if(!checkTextSize.success) {
+        return sendResponse(400, { success: false, message: checkTextSize.message });
     }
     const username = event.username;
     const timestamp = new Date().toISOString();

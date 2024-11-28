@@ -19,11 +19,12 @@ const validateToken = {
             return request.response
 
         } catch(error) {
-            throw new Error(
-                JSON.stringify(
-                    sendResponse(401, {success: false, message: error.message || 'Invalid token'})
-                )
-            )
+            
+            if (error.name === 'TokenExpiredError') {
+                return sendResponse(401, { success: false, message: 'Token expired, please log in again' });
+            }
+            console.log(error);
+            return sendResponse(401, { success: false, message: error.message || 'Invalid token' });
         }
 
     }

@@ -12,25 +12,53 @@ const deleteNote = async (event) => {
     if (!id) {
         return sendResponse(400, { success: false, message: 'ID is required' });
     }
-    const params = {
+
+    const getParams = {
         TableName: 'notes-db',
-        Key: {
-            username, id
-        },
-        UpdateExpression: 'set #isDeleted = :isDeleted',
-        ExpressionAttributeNames: {
-            '#isDeleted' : 'isDeleted'
-        },
-        ExpressionAttributeValues: {
-            ':isDeleted' : true
-        },
-        ReturnValues: 'ALL_NEW'
+        Key: { username, id }
     };
+    
 
     try {
-        const result = await db.update(params).promise();
+        const result = await db.get(getParams).promise();
 
-        return sendResponse(200, {success: true, message: 'Note deleted successfully', note: result.Attributes});
+        if (!result.Item) {
+            return sendResponse(404, { success: false, message: 'Note not found' });
+        }
+        if (result.Item.isDeleted) {
+            return sendResponse(200, { success: true, message: 'Note was already deleted' });
+        }
+        const updateParams = {
+            TableName: 'notes-db',
+            Key: { username, id },
+            UpdateExpression: 'set #isDeleted = :isDeleted, #modifiedAt = :modifiedAt',
+            ExpressionAttributeNames: {
+                '#isDeleted': 'isDeleted',
+                '#modifiedAt': 'modifiedAt'
+            },
+            ExpressionAttributeValues: {
+                ':isDeleted': true,
+                ':modifiedAt': new Date().toISOString()
+            },
+            ReturnValues: 'ALL_NEW',
+        };
+
+        const updateResult = await db.update(updateParams).promise();
+
+        if (!updateResult.Attributes) {
+            return sendResponse(500, { success: false, message: 'Error marking note as deleted' });
+        }
+        
+        const note = {
+            username: updateResult.Attributes.username,
+            id: updateResult.Attributes.id,
+            title: updateResult.Attributes.title,
+            text: updateResult.Attributes.text,
+            createdAt: updateResult.Attributes.createdAt,
+            modifiedAt: updateResult.Attributes.modifiedAt,
+            isDeleted: updateResult.Attributes.isDeleted
+        };
+        return sendResponse(200, {success: true, message: 'Note deleted successfully', note: note});
     } catch (error) {
         console.log(error);
         return sendResponse(500, { success: false, message: 'Could not delete note'})

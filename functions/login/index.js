@@ -34,13 +34,14 @@ async function login(username, password) {
 
     if (!correctPassword) return { success: false, message: 'Incorrect username or password' }
 
-    const token = jwt.sign({ id: user.userId, username: user.username }, "aabbcc", { expiresIn: 3600 });
+    const token = jwt.sign({ id: user.userId, username: user.username }, "aabbcc", { expiresIn: "1d" });
 
     return { success: true, token: token }
 }
 
 
 exports.handler = async (event) => {
+    try {
     const { username, password } = JSON.parse(event.body);
 
     const result = await login(username, password);
@@ -50,4 +51,7 @@ exports.handler = async (event) => {
 
     else 
         return sendResponse(400, result);
+} catch(error ) {
+    return sendResponse(500, {success: false, message: 'Internal server error'});
+}
 }
