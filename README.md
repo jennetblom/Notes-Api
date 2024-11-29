@@ -1,72 +1,42 @@
 
-<!--
-title: 'AWS NodeJS Example'
-description: 'This template demonstrates how to deploy a simple NodeJS function running on AWS Lambda using the Serverless Framework.'
-layout: Doc
-framework: v4
-platform: AWS
-language: nodeJS
-priority: 1
-authorLink: 'https://github.com/serverless'
-authorName: 'Serverless, Inc.'
-authorAvatar: 'https://avatars1.githubusercontent.com/u/13742415?s=200&v=4'
--->
+The is an API for saving notes in a dynamoDB-db. 
 
-# Serverless Framework AWS NodeJS Example
+Here is the endpoints:
 
-This template demonstrates how to deploy a simple NodeJS function running on AWS Lambda using the Serverless Framework. The deployed function does not include any event definitions or any kind of persistence (database). For more advanced configurations check out the [examples repo](https://github.com/serverless/examples/) which include use cases like API endpoints, workers triggered by SQS, persistence with DynamoDB, and scheduled tasks. For details about configuration of specific events, please refer to our [documentation](https://www.serverless.com/framework/docs/providers/aws/events/).
+Function Details in serverless.yml
 
-## Usage
+signUp
+Trigger: POST /api/user/signup
+Purpose: Handles user registration by accepting user details and saving them in a database.
 
-### Deployment
+login
+Trigger: POST /api/user/login
+Purpose: Authenticates a user based on provided credentials and returns an authentication token (e.g., JWT).
 
-In order to deploy the example, you need to run the following command:
+getAllNotes
+Trigger: GET /api/notes
+Purpose: Fetches all notes associated with the authenticated user, returning them in a list format.
 
-```
-serverless deploy
-```
+getNoteById
+Trigger: GET /api/notes/{id}
+Purpose: Fetches a specific note based on its unique ID.
 
-After running deploy, you should see output similar to:
+postNote
+Trigger: POST /api/notes
+Purpose: Creates a new note based on the provided title and content.
 
-```
-Deploying "aws-node" to stage "dev" (us-east-1)
+updateNote
+Trigger: PUT /api/notes/{id}
+Purpose: Updates an existing note with the given ID using the new data in the request body.
 
-✔ Service deployed to stack aws-node-dev (90s)
+deleteNote
+Trigger: DELETE /api/notes/{id}
+Purpose: Soft deletes a note by its ID, marking it as deleted but not permanently removing it.
 
-functions:
-  hello: aws-node-dev-hello (1.5 kB)
-```
+getDeletedNotes
+Trigger: GET /api/notes/deleted
+Purpose: Retrieves all notes that have been marked as deleted (soft deleted).
 
-### Invocation
-
-After successful deployment, you can invoke the deployed function by using the following command:
-
-```
-serverless invoke --function hello
-```
-
-Which should result in response similar to the following:
-
-```json
-{
-  "statusCode": 200,
-  "body": "{\"message\":\"Go Serverless v4.0! Your function executed successfully!\"}"
-}
-```
-
-### Local development
-
-The easiest way to develop and test your function is to use the Serverless Framework's `dev` command:
-
-```
-serverless dev
-```
-
-This will start a local emulator of AWS Lambda and tunnel your requests to and from AWS Lambda, allowing you to interact with your function as if it were running in the cloud.
-
-Now you can invoke the function as before, but this time the function will be executed locally. Now you can develop your function locally, invoke it, and see the results immediately without having to re-deploy.
-
-When you are done developing, don't forget to run `serverless deploy` to deploy the function to the cloud.
-
-# Notes-Api
-
+restoreNote
+Trigger: PUT /api/notes/restore/{id}
+Purpose: Restores a note that was previously deleted, making it active again.
