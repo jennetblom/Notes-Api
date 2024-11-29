@@ -17,13 +17,21 @@ provider:
 plugins: 
   - serverless-dotenv-plugin
 
-
 package: 
   individually: true
 
-build: 
+custom:
   esbuild:
+    bundle: true
     minify: true
+    target: 'node20'
+    define:
+      global: 'globalThis'
+    plugins: []
+    inject:
+      - ./buffer-polyfill.js
+
+    
 
 functions:
   signUp:

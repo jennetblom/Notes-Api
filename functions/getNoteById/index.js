@@ -1,7 +1,11 @@
-const { sendResponse } = require("../../responses");
-const middy  = require('@middy/core');
-const { validateToken } = require("../middleware/auth");
-const AWS = require('aws-sdk');
+
+import { sendResponse } from '../../responses/index.js'
+import { validateToken } from "../middleware/auth.js";
+import AWS from 'aws-sdk';
+import validator from '@middy/validator';
+import middy from '@middy/core';
+
+
 const db = new AWS.DynamoDB.DocumentClient();
 
 const getNoteById = async (event) => {
@@ -49,8 +53,5 @@ const getNoteById = async (event) => {
 
 }
 
-const handler = middy(getNoteById)
+export const handler = middy(getNoteById)
     .use(validateToken)
-
-
-module.exports = { handler }; 

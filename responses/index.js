@@ -8,4 +8,4 @@ function sendResponse(code, response) {
     };
 }
 
-module.exports = {sendResponse}
+export {sendResponse};

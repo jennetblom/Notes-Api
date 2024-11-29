@@ -1,0 +1,44 @@
+import createError from 'http-errors';
+
+const errorMiddleware = () => ({
+    onError: (request) => {
+        
+        const { error } = request;
+  
+        let statusCode = 500; 
+        let message = 'Internal Server Error';
+
+        
+        if (error.statusCode) {
+         
+            statusCode = error.statusCode;
+            message = error.message || message;
+        } else if (error.name === 'SchemaValidationError') {
+          
+            statusCode = 400;
+            message = 'Bad request: Validation failed';
+       
+        } else if (error.name === 'UnauthorizedError') {
+          
+            statusCode = 401;
+            message = 'Unauthorized: Authentication required';
+        } else if (error.name === 'NotFoundError') {
+          
+            statusCode = 404;
+            message = 'Not Found: Resource does not exist';
+        }
+
+        console.error('Error captured in middleware:', error);
+
+        
+        request.response = {
+            statusCode,
+            body: JSON.stringify({
+                success: false,
+                message,
+            }),
+        };
+    },
+});
+
+export default errorMiddleware;

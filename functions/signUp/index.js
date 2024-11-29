@@ -1,7 +1,9 @@
-const { sendResponse } = require("../../responses");
-const { nanoid } = require('nanoid');
-const bcrypt = require('bcryptjs');
-const AWS = require('aws-sdk');
+import { sendResponse } from '../../responses/index.js';
+import { nanoid } from 'nanoid';
+import bcrypt from 'bcryptjs';
+import AWS from 'aws-sdk';
+import jwt from 'jsonwebtoken';
+
 const db = new AWS.DynamoDB.DocumentClient();
 
 
@@ -54,7 +56,7 @@ async function signup(username, password, firstname, lastname) {
     if (!username || !password || !firstname || !lastname) {
         return { success: false, message: 'All fields are required' };
     }
-    
+
     const usernameExists = await checkIfUsernameExists(username);
     if (usernameExists) {
         return { success: false, message: 'Username already exists' };
@@ -67,7 +69,7 @@ async function signup(username, password, firstname, lastname) {
 }
 
 
-exports.handler = async (event) => {
+export const handler = async (event) => {
 
     const { username, password, firstname, lastname } = JSON.parse(event.body);
 

@@ -1,7 +1,11 @@
-const { sendResponse } = require("../../responses");
-const middy = require('@middy/core');
-const { validateToken } = require("../middleware/auth");
-const AWS = require('aws-sdk');
+
+import { sendResponse } from '../../responses/index.js'
+import { validateToken } from "../middleware/auth.js";
+import AWS from 'aws-sdk';
+import validator from '@middy/validator';
+import middy from '@middy/core';
+
+
 const db = new AWS.DynamoDB.DocumentClient();
 
 const getAllNotes = async (event) => {
@@ -51,10 +55,7 @@ const getAllNotes = async (event) => {
         return sendResponse(500, { success: false, message: 'Error fetching notes' })
     }
 
-}
+};
 
-const handler = middy(getAllNotes)
+export const handler = middy(getAllNotes)
     .use(validateToken);
-
-
-module.exports = {handler};

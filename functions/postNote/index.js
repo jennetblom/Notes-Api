@@ -1,43 +1,31 @@
-const { sendResponse } = require("../../responses");
-const middy = require('@middy/core');
-const { validateToken } = require("../middleware/auth");
-const AWS = require('aws-sdk');
+
+
+import { sendResponse } from '../../responses/index.js';
+import middy from '@middy/core';
+import jsonBodyParser from '@middy/http-json-body-parser';
+import { validateToken } from "../middleware/auth.js";
+import { transpileSchema } from '@middy/validator/transpile';
+import errorMiddleware from '../../utils/errorMiddleware';
+import AWS from 'aws-sdk';
+import { nanoid } from 'nanoid';
+import validator from '@middy/validator';
+import httpErrorHandler from '@middy/http-error-handler';
 const db = new AWS.DynamoDB.DocumentClient();
-const { nanoid } = require('nanoid');
 
 
-function checkTextLimit(title, text) {
-
-    if (title.length > 50 && text.length > 300){
-        return { success: false, message: 'Title and text are too long. Title should be max 50 characters and the text should be max 300 characters' };
-    }
-    else if(title.length > 50) {
-        return { success: false, message: 'Title is too long. Title should be max 50 characters.' };
-    } 
-    else if(text.length > 300) {
-        return { success: false, message: 'Text is too long. Text should be max 300 characters.' };
-    } 
-    else {
-        return { success: true };
-    }
-}
 const postNote = async (event) => {
-    
+    console.log("Event body before validation:", event.body);
 
-    const{ title, text } = JSON.parse(event.body);
+    const { title, text } = event.body;
 
-    const checkTextSize = checkTextLimit(title, text);
-    if(!checkTextSize.success) {
-        return sendResponse(400, { success: false, message: checkTextSize.message });
-    }
     const username = event.username;
     const timestamp = new Date().toISOString();
     const id = nanoid(8);
-   
+
     const params = {
         TableName: 'notes-db',
-        Item : {
-            username:username,
+        Item: {
+            username: username,
             id: id,
             title: title,
             text: text,
@@ -49,15 +37,35 @@ const postNote = async (event) => {
 
     try {
         await db.put(params).promise();
-        return sendResponse(200, {success: true, message: 'Note created successfully'})
+        return sendResponse(200, { success: true, message: 'Note created successfully' })
     } catch (error) {
         console.log(error);
-        return sendResponse(500, {success: false, message: 'Could not create'});
+        return sendResponse(500, { success: false, message: 'Could not create' });
     }
 }
 
-const handler = middy(postNote)
-    .use(validateToken)
+const schema = {
+    type: "object",
+    properties: {
+        body: {
+            type: "object",
+            properties: {
+                title: { type: "string", maxLength: 50 },
+                text: { type: "string", maxLength: 300 }
+            },
+            required: ["title", "text"],
+            additionalProperties: false
+        }
+    },
+    required: ["body"]
+};
+export const handler = middy(postNote)
+    .use(validateToken)         
+    .use(jsonBodyParser())        
+    .use(validator({
+        eventSchema: transpileSchema(schema)
+    }))
+    .use(errorMiddleware());
 
 
-module.exports = { handler };   
+

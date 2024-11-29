@@ -10,12 +10,23 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "serverless-webpack": "^5.15.0"
+    "ajv-cmd": "^0.7.11",
+    "serverless-webpack": "^5.15.0",
+    "webpack": "^5.96.1",
+    "webpack-node-externals": "^3.0.0"
   },
+  "type": "module",
   "dependencies": {
-    "@middy/core": "^4.0.0",
+    "@middy/core": "^6.0.0",
+    "@middy/http-error-handler": "^6.0.0",
+    "@middy/http-json-body-parser": "^6.0.0",
+    "@middy/validator": "^6.0.0",
+    "ajv": "^8.17.1",
+    "aws-sdk": "^2.1692.0",
     "bcryptjs": "^2.4.3",
+    "buffer": "^6.0.3",
     "dotenv": "^16.4.5",
+    "http-errors": "^2.0.0",
     "jsonwebtoken": "^9.0.2",
     "nanoid": "^5.0.8",
     "serverless-dotenv-plugin": "^6.0.0",

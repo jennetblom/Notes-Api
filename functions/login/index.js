@@ -1,8 +1,9 @@
-const AWS = require('aws-sdk');
-const { sendResponse } = require('../../responses');
+import AWS from 'aws-sdk';
+import { sendResponse } from '../../responses/index.js';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+
 const db = new AWS.DynamoDB.DocumentClient();
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
 
 async function getUser(username) {
 
@@ -40,7 +41,7 @@ async function login(username, password) {
 }
 
 
-exports.handler = async (event) => {
+export const handler = async (event) => {
     try {
     const { username, password } = JSON.parse(event.body);
 
