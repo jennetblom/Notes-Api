@@ -1,27 +1,44 @@
 import { sendResponse } from '../../responses/index.js';
+import { DynamoDBClient, PutItemCommand, GetItemCommand } from '@aws-sdk/client-dynamodb';
 import { nanoid } from 'nanoid';
-import bcrypt from 'bcryptjs';
-import AWS from 'aws-sdk';
-import jwt from 'jsonwebtoken';
 
-const db = new AWS.DynamoDB.DocumentClient();
 
+const dbClient = new DynamoDBClient({ region: 'eu-north-1' });
+
+const schema = {
+    type: "object",
+    properties: {
+        body: {
+            type: "object",
+            properties: {
+                username: { type: "string", minLength: 1 },
+                password: { type: "string", minLength: 1 },
+                firstname: { type: "string", minLength: 1 },
+                lastname: { type: "string", minLength: 1 },
+            },
+            required: ["username", "password", "firstname", "lastname"],
+            additionalProperties: false
+        }
+    },
+    required: ["body"]
+};
 
 async function createAccount(username, hashedPassword, userId, firstname, lastname) {
 
 
     try {
-        await db.put({
+        const params = {
             TableName: 'accounts',
             Item: {
-                username: username,
-                password: hashedPassword,
-                firstname: firstname,
-                lastname: lastname,
-                userId: userId
+                username: { S: username },
+                password: { S: hashedPassword },
+                firstname: { S: firstname },
+                lastname: { S: lastname },
+                userId: { S: userId }
             }
-        }).promise();
-
+        };
+        const command = new PutItemCommand(params);
+        await dbClient.send(command);
         return { success: true, userId: userId };
     } catch (error) {
         console.log(error);
@@ -32,12 +49,13 @@ async function checkIfUsernameExists(username) {
     const params = {
         TableName: 'accounts',
         Key: {
-            username: username
+            username: { S: username }
         }
     };
 
     try {
-        const result = await db.get(params).promise();
+        const command = new GetItemCommand(params);
+        const result = await dbClient.send(command);
 
         if (result.Item) {
             return true;

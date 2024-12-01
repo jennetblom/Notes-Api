@@ -1,12 +1,11 @@
 
-import { sendResponse } from '../../responses/index.js'
+import { sendResponse } from '../../responses/index.js';
 import { validateToken } from "../middleware/auth.js";
-import AWS from 'aws-sdk';
-import validator from '@middy/validator';
+import { DynamoDBClient, GetItemCommand, UpdateItemCommand } from '@aws-sdk/client-dynamodb'; 
 import middy from '@middy/core';
 
+const dbClient = new DynamoDBClient({ region: 'eu-north-1' });
 
-const db = new AWS.DynamoDB.DocumentClient();
 const restoreNote = async (event) => {
 
     const username = event.username;
@@ -18,12 +17,16 @@ const restoreNote = async (event) => {
 
     const getParams = {
         TableName: 'notes-db',
-        Key: { username, id }
+        Key: {
+            username: { S: username }, 
+            id: { S: id }           
+        }
     };
- 
+
 
     try {
-        const result = await db.get(getParams).promise();
+        const getCommand = new GetItemCommand(getParams); 
+        const result = await dbClient.send(getCommand); 
 
         console.log('Retrieved Note:', result.Item); 
         if(!result.Item) {
@@ -34,20 +37,25 @@ const restoreNote = async (event) => {
         }
         const updateParams = {
             TableName: 'notes-db',
-            Key: { username, id },
-            UpdateExpression: 'set #isDeleted = :isDeleted, #modifiedAt = :modifiedAt',
+            Key: {
+                username: { S: username },
+                id: { S: id }
+            },
+            UpdateExpression: 'SET #isDeleted = :isDeleted, #modifiedAt = :modifiedAt',
             ExpressionAttributeNames: {
                 '#isDeleted': 'isDeleted',
                 '#modifiedAt': 'modifiedAt'
             },
             ExpressionAttributeValues: {
-                ':isDeleted': false,
-                ':modifiedAt': new Date().toISOString()
+                ':isDeleted': { BOOL: false },  
+                ':modifiedAt': { S: new Date().toISOString() } 
             },
-            ReturnValues: 'ALL_NEW',
+            ReturnValues: 'ALL_NEW' 
         };
 
-        const updateResult = await db.update(updateParams).promise();
+        const updateCommand = new UpdateItemCommand(updateParams); 
+        const updateResult = await dbClient.send(updateCommand); 
+
         console.log('Update Result:', updateResult);
         if (!updateResult.Attributes) {
             return sendResponse(500, { success: false, message: 'Error restoring note' });

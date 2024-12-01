@@ -1,13 +1,10 @@
 
-import { sendResponse } from '../../responses/index.js'
-import { validateToken } from "../middleware/auth.js";
-import AWS from 'aws-sdk';
-import validator from '@middy/validator';
+import { sendResponse } from '../../responses/index.js';
 import middy from '@middy/core';
+import { validateToken } from "../middleware/auth.js";
+import { DynamoDBClient, GetItemCommand, UpdateItemCommand } from '@aws-sdk/client-dynamodb';
 
-
-
-const db = new AWS.DynamoDB.DocumentClient();
+const dbClient = new DynamoDBClient({ region: 'eu-north-1' });
 
 const deleteNote = async (event) => {
 
@@ -20,35 +17,39 @@ const deleteNote = async (event) => {
 
     const getParams = {
         TableName: 'notes-db',
-        Key: { username, id }
+        Key: { username: { S: username }, id: { S: id } } 
     };
     
 
     try {
-        const result = await db.get(getParams).promise();
+        const getCommand = new GetItemCommand(getParams);
+        const result = await dbClient.send(getCommand);
+
+        
 
         if (!result.Item) {
             return sendResponse(404, { success: false, message: 'Note not found' });
         }
-        if (result.Item.isDeleted) {
+        if (result.Item.isDeleted.BOOL) {
             return sendResponse(200, { success: true, message: 'Note was already deleted' });
         }
         const updateParams = {
             TableName: 'notes-db',
-            Key: { username, id },
+            Key: { username: { S: username }, id: { S: id } }, 
             UpdateExpression: 'set #isDeleted = :isDeleted, #modifiedAt = :modifiedAt',
             ExpressionAttributeNames: {
                 '#isDeleted': 'isDeleted',
                 '#modifiedAt': 'modifiedAt'
             },
             ExpressionAttributeValues: {
-                ':isDeleted': true,
-                ':modifiedAt': new Date().toISOString()
+                ':isDeleted': { BOOL: true },
+                ':modifiedAt': { S: new Date().toISOString() }
             },
             ReturnValues: 'ALL_NEW',
         };
 
-        const updateResult = await db.update(updateParams).promise();
+        const updateCommand = new UpdateItemCommand(updateParams);
+        const updateResult = await dbClient.send(updateCommand);
 
         if (!updateResult.Attributes) {
             return sendResponse(500, { success: false, message: 'Error marking note as deleted' });
@@ -73,3 +74,4 @@ const deleteNote = async (event) => {
 
 export const handler = middy(deleteNote)
     .use(validateToken)
+  

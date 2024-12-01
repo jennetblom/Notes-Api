@@ -1,10 +1,7 @@
 
 import { sendResponse } from '../../responses/index.js';
 import jwt from 'jsonwebtoken';
-import AWS from 'aws-sdk';
 
-
-const db = new AWS.DynamoDB.DocumentClient();
 
 export const validateToken = {
     before: async(request) => {

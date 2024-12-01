@@ -1,16 +1,15 @@
-
-
 import { sendResponse } from '../../responses/index.js';
 import middy from '@middy/core';
 import jsonBodyParser from '@middy/http-json-body-parser';
 import { validateToken } from "../middleware/auth.js";
 import { transpileSchema } from '@middy/validator/transpile';
 import errorMiddleware from '../../utils/errorMiddleware';
-import AWS from 'aws-sdk';
+import { DynamoDBClient, PutItemCommand } from '@aws-sdk/client-dynamodb'; 
 import { nanoid } from 'nanoid';
 import validator from '@middy/validator';
-import httpErrorHandler from '@middy/http-error-handler';
-const db = new AWS.DynamoDB.DocumentClient();
+
+
+const dbClient = new DynamoDBClient({ region: 'eu-north-1' });
 
 
 const postNote = async (event) => {
@@ -25,18 +24,19 @@ const postNote = async (event) => {
     const params = {
         TableName: 'notes-db',
         Item: {
-            username: username,
-            id: id,
-            title: title,
-            text: text,
-            createdAt: timestamp,
-            modifiedAt: timestamp,
-            isDeleted: false
+            username: { S: username }, 
+            id: { S: id },            
+            title: { S: title },    
+            text: { S: text },        
+            createdAt: { S: timestamp }, 
+            modifiedAt: { S: timestamp }, 
+            isDeleted: { BOOL: false }  
         }
     };
 
     try {
-        await db.put(params).promise();
+        const command = new PutItemCommand(params);
+        await dbClient.send(command); 
         return sendResponse(200, { success: true, message: 'Note created successfully' })
     } catch (error) {
         console.log(error);
@@ -63,7 +63,7 @@ export const handler = middy(postNote)
     .use(validateToken)         
     .use(jsonBodyParser())        
     .use(validator({
-        eventSchema: transpileSchema(schema)
+        eventSchema: transpileSchema(schema),  errorHandler: false  
     }))
     .use(errorMiddleware());
 

@@ -1,12 +1,9 @@
-
-import { sendResponse } from '../../responses/index.js'
-import { validateToken } from "../middleware/auth.js";
-import AWS from 'aws-sdk';
-import validator from '@middy/validator';
+import { sendResponse } from '../../responses/index.js';
 import middy from '@middy/core';
+import { validateToken } from "../middleware/auth.js";
+import { DynamoDBClient, GetItemCommand } from '@aws-sdk/client-dynamodb';
 
-
-const db = new AWS.DynamoDB.DocumentClient();
+const dbClient = new DynamoDBClient({ region: 'eu-north-1' });
 
 const getNoteById = async (event) => {
 
@@ -23,13 +20,14 @@ const getNoteById = async (event) => {
     const params = {
         TableName: 'notes-db',
         Key: {
-            username: username,
-            id: id
+            username: { S: username },
+            id: { S: id }
         }
     };
 
     try {
-        const result = await db.get(params).promise();
+        const getCommand = new GetItemCommand(params);
+        const result = await dbClient.send(getCommand);
 
         if(!result.Item) {
             return sendResponse(404, { success: false, message: "Could not find note" });
@@ -55,3 +53,4 @@ const getNoteById = async (event) => {
 
 export const handler = middy(getNoteById)
     .use(validateToken)
+

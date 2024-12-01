@@ -1,11 +1,29 @@
-
-import { sendResponse } from '../../responses/index.js'
-import { validateToken } from "../middleware/auth.js";
-import AWS from 'aws-sdk';
-import validator from '@middy/validator';
+import { sendResponse } from '../../responses/index.js';
 import middy from '@middy/core';
+import jsonBodyParser from '@middy/http-json-body-parser';
+import { validateToken } from "../middleware/auth.js";
+import { transpileSchema } from '@middy/validator/transpile';
+import errorMiddleware from '../../utils/errorMiddleware';
+import { DynamoDBClient, UpdateItemCommand } from '@aws-sdk/client-dynamodb';  
+import validator from '@middy/validator';
 
-const db = new AWS.DynamoDB.DocumentClient();
+const dbClient = new DynamoDBClient({ region: 'eu-north-1' });
+
+const schema = {
+    type: "object",
+    properties: {
+        body: {
+            type: "object",
+            properties: {
+                title: { type: "string", maxLength: 50 },
+                text: { type: "string", maxLength: 300 }
+            },
+            required: ["title", "text"],
+            additionalProperties: false
+        }
+    },
+    required: ["body"]
+};
 
 const updateNote = async (event) => {
 
@@ -16,7 +34,7 @@ const updateNote = async (event) => {
         return sendResponse(400, { success: false, message: 'ID is required' });
     }
 
-    const {title,  text} = JSON.parse(event.body);
+    const { title, text } = event.body;
     
     if (!title || !text) {
         return sendResponse(400, { success: false, message: "Title and text are required" });
@@ -24,26 +42,30 @@ const updateNote = async (event) => {
 
     const params = {
         TableName: 'notes-db',
-        Key: { username, id },
+        Key: { 
+            username: { S: username },
+            id: { S: id }
+        },
         UpdateExpression: 'set #title = :title, #text = :text, #modifiedAt = :modifiedAt',
         ConditionExpression: 'attribute_exists(username) AND attribute_exists(id) AND #isDeleted = :isDeleted',
         ExpressionAttributeNames: {
             '#title': 'title',
             '#text': 'text',
             '#modifiedAt': 'modifiedAt',
-            '#isDeleted': 'isDeleted',
+            '#isDeleted': 'isDeleted'
         },
         ExpressionAttributeValues: {
-            ':title': title.trim(),
-            ':text': text.trim(),
-            ':modifiedAt': new Date().toISOString(),
-            ':isDeleted': false,
+            ':title': { S: title.trim() },
+            ':text': { S: text.trim() },
+            ':modifiedAt': { S: new Date().toISOString() },
+            ':isDeleted': { BOOL: false }
         },
         ReturnValues: 'ALL_NEW',
     };
 
     try {
-        const result = await db.update(params).promise();
+        const command = new UpdateItemCommand(params);  
+        const result = await dbClient.send(command);  
 
         if (!result.Attributes) {
             return sendResponse(404, { success: false, message: 'Note not found or has been deleted' });
@@ -69,5 +91,10 @@ const updateNote = async (event) => {
 }
 
 export const handler = middy(updateNote)
-    .use(validateToken);
+    .use(validateToken)
+    .use(jsonBodyParser())        
+    .use(validator({
+        eventSchema: transpileSchema(schema),  errorHandler: false  
+    }))
+    .use(errorMiddleware());
 

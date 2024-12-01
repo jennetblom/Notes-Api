@@ -1,12 +1,12 @@
 
-import { sendResponse } from '../../responses/index.js'
-import { validateToken } from "../middleware/auth.js";
-import AWS from 'aws-sdk';
-import validator from '@middy/validator';
+import { sendResponse } from '../../responses/index.js';
 import middy from '@middy/core';
+import { validateToken } from "../middleware/auth.js";
+import { DynamoDBClient, QueryCommand } from '@aws-sdk/client-dynamodb';
 
 
-const db = new AWS.DynamoDB.DocumentClient();
+const dbClient = new DynamoDBClient({ region: 'eu-north-1' });
+
 
 const getDeletedNotes = async (event) => {
 
@@ -22,13 +22,14 @@ const getDeletedNotes = async (event) => {
             '#isDeleted' : 'isDeleted'
         },
         ExpressionAttributeValues: {
-            ':username' : username,
-            ':isDeleted' : true
+            ':username' : { S: username }, 
+            ':isDeleted' : { BOOL: true } 
         }
     };
 
     try {
-        const result = await db.query(params).promise();
+        const queryCommand = new QueryCommand(params);
+        const result = await dbClient.send(queryCommand);
 
         if (result.Items.length === 0) {
             return sendResponse(200, { success: true, message: 'No notes available' });
@@ -54,6 +55,7 @@ const getDeletedNotes = async (event) => {
 }
 
 export const handler = middy(getDeletedNotes)
-    .use(validateToken);
+    .use(validateToken)
+ 
 
 
